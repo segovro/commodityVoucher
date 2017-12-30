@@ -47,11 +47,19 @@ contract commodityVoucher {
          }
         _;
      }
+     
+// Functions with this modifier can only be executed during the validity period
+     modifier onlyV() {
+         if ((now < start) || (now > expiration)) {
+            revert(); }
+         _;
+    }
+       
     
 // balance in tokens for each account for each period
     mapping(address => uint) public voucherBalance;
 // Owner of account approves the transfer of an amount to another account
-    mapping(address => mapping (address => uint) allowed;
+    mapping(address => mapping (address => uint)) public allowed;
 // balance in debt for each account for each period
     mapping(address => uint[]) public debtBalance;
 
@@ -72,7 +80,7 @@ contract commodityVoucher {
 // This generates public events on the blockchain that will notify clients
      
 // Triggered when voucher are transferred.
-     event Transfer(address indexed _from, address indexed _to, uint256 _value);
+     event Transfer(uint _amount, address indexed _from, uint _balanceFrom, address indexed _to, uint _balanceTo);
  
  // Triggered whenever approve(address _spender, uint256 _value) is called
      event Approval(address indexed _owner, address indexed _spender, uint256 _value);
@@ -84,9 +92,13 @@ contract commodityVoucher {
     
 // ERC20 set of functions
 
-// Transfeer vouchers
-// Transfer the balance from sender's account to another account
-    function transfer(address _to, uint _amount) public {
+// Mint vouchers
+    function mint (uint _amount) public onlyLegalEntity onlyV {
+        voucherBalance[legalEntity] += _amount;
+    }
+
+// Transfeer vouchers. Transfer the balance from sender's account to another account
+    function transfer(address _to, uint _amount) public onlyV {
         // Check if the sender has enough
         if (voucherBalance[msg.sender] < _amount) revert();   
         // Check for overflows
@@ -99,47 +111,53 @@ contract commodityVoucher {
         Transfer(_amount, msg.sender, voucherBalance[msg.sender], _to, voucherBalance[_to] );                   
     }
     
-// Mint vouchers
-    function mint (uint _amount) public legalEntity {
-        voucherBalance[legalEntity] += _amount;
-    }
-
-    // Allow _spender to withdraw from your account, multiple times, up to the _value amount.
-    // If this function is called again it overwrites the current allowance with _value.
-     function approve(address _spender, uint256 _amount) public {
+// Allow _spender to withdraw from your account, multiple times, up to the _value amount.
+// If this function is called again it overwrites the current allowance with _value.
+     function approve(address _spender, uint _amount) public onlyV {
          allowed[msg.sender][_spender] = _amount;
          Approval(msg.sender, _spender, _amount);
     }
      
-     // Send _value amount of tokens from address _from to address _to
-     // The transferFrom method is used for a withdraw workflow, allowing contracts to send
-     // tokens on your behalf, for example to "deposit" to a contract address and/or to charge
-     // fees in sub-currencies; the command should fail unless the _from account has
-     // deliberately authorized the sender of the message via some mechanism; we propose
-     // these standardized APIs for approval:
-     function transferFrom(
-         address _from,
-         address _to,
-         uint256 _amount
-     ) public {
-     		int256 _ivalue = int256(_amount);   
-     		if (balances[_from] < (_ivalue + negLim)) revert();   		// Check if the sender has enough
-	        if (balances[_to] + _ivalue < balances[_to]) revert(); 	// Check for overflows
-	        balances[_from] -= _ivalue;                     		// Subtract from the sender
-	        balances[_to] += _ivalue;                            	// Add the same to the recipient
-            Transfer(_from, _to, _amount);
+// Send an amount of tokens from other address _from to address _to
+    function transferFrom(address _from, address _to, uint _amount) public onlyV returns (bool success) {
+        // Check allowance
+        require(_amount <= allowed[_from][msg.sender]);
+        allowed[_from][msg.sender] -= _amount;
+        // Check if the sender has enough
+        if (voucherBalance[_from] < _amount) revert();   
+        // Check for overflows
+        if (voucherBalance[_to] + _amount < voucherBalance[_to]) revert();
+        // Subtract from the sender
+        voucherBalance[_from] -= _amount;  
+        // Add the same to the recipient
+        voucherBalance[_to] += _amount; 
+        return true;
+        Transfer(_amount, _from, voucherBalance[_from], _to, voucherBalance[_to] );
+    }
+
+// What is the balance of a particular account?
+     function balanceOf(address _account) constant public returns (uint balance) {
+         return voucherBalance[_account];
      }
 
-    // What is the balance of a particular account?
-     function balanceOf(address _owner) constant public returns (int256 balance) {
-         return balances[_owner];
-     }
-
-	function allowance(address _owner, address _spender) constant public returns (uint256 remaining) {
-	    return allowed[_owner][_spender];
+// What is the allowance of a particular account?
+    function allowance(address _account, address _spender) constant public returns (uint256 remaining) {
+	    return allowed[_account][_spender];
 	}
+	
+// ISSUING AND REDEEMING PROMISES
 
-    /* This unnamed function is called whenever someone tries to send ether to it */
+// A producer promises to produce and sell, isues tokens and acuires a debtBalance
+    function issueTokens (uint _amount, uint _periodNumber) public onlyV {
+        // promises cannot be beyond valid period
+        if ((now + (_periodNumber * period)) > expiration) revert();
+        
+    }
+
+// LIQUIDITY
+
+
+// This unnamed function is called whenever someone tries to send ether to it */
     function () public {
         revert();     // Prevents accidental sending of ether
     }
