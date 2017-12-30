@@ -61,7 +61,7 @@ contract commodityVoucher {
 // Owner of account approves the transfer of an amount to another account
     mapping(address => mapping (address => uint)) public allowed;
 // balance in debt for each account for each period
-    mapping(address => uint[]) public debtBalance;
+    mapping(address => int[]) public debtBalance;
 
 // Initializes contract 
      function commodityVoucher(            					
@@ -147,12 +147,34 @@ contract commodityVoucher {
 	
 // ISSUING AND REDEEMING PROMISES
 
-// A producer promises to produce and sell, isues tokens and acuires a debtBalance
+// A producer promises to produce and sell, isues tokens and aquires a debtBalance
     function issueTokens (uint _amount, uint _periodNumber) public onlyV {
         // promises cannot be beyond valid period
         if ((now + (_periodNumber * period)) > expiration) revert();
-        
+            voucherBalance[msg.sender] += _amount;
+            int _debt = int(_amount);
+            debtBalance[msg.sender][_periodNumber] += _debt;
     }
+    
+// Buy a product to a producer by redeeming tokens
+        function buy (address _seller, uint _price) public onlyV {
+            // get the current period _periodNumber
+            getPeriod ();
+            // Check if the buyer has enough
+            if (voucherBalance[msg.sender] < _price) revert(); 
+            //  Redeem the tokens
+            voucherBalance[msg.sender] -= _price;
+            // the seller cancels debt for that period
+            int _debt = int(_price);
+            debtBalance[_seller][currentPeriod] -= _debt;
+        }
+    
+// What is the debt of a particular account due to a certain period?
+     function debtOf(address _account, uint _periodNumber) constant public returns (int _debt) {
+         return debtBalance[_account][_periodNumber];
+     }
+     
+
 
 // LIQUIDITY
 
@@ -162,5 +184,4 @@ contract commodityVoucher {
         revert();     // Prevents accidental sending of ether
     }
 
-    
-}
+  }
