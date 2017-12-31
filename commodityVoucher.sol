@@ -18,13 +18,16 @@ contract commodityVoucher {
 // total Debt in vts 
     int public totalDebt;
 // reserve in Ξ
-    uint public totalReserve;
     uint public numberSellers;
 
-// Public variables of the bancor protocol
+// Public variables of the Bancor protocol
 // Constant Reserve Ratio (CRR)
     uint CRR = 100;
+// Tax
     uint tax = 20;
+// Relay related
+    uint public totalReserve;
+    uint public price;
     
 // A Ricardian contract is a document which is legible to both a court of law and to a software application
 // Ricardian Contract legal entity operating the token
@@ -67,8 +70,8 @@ contract commodityVoucher {
          _;
     }
   
-// 
-modifier onlySeller() {
+// Functions with this modifier can only be executed during the validity period
+    modifier onlySeller() {
          if (seller[msg.sender].member != true) {
             revert(); }
          _;
@@ -106,9 +109,11 @@ modifier onlySeller() {
      		start = now;
      		expiration = now + duration;
      		// write as many as necessary
-     		merchandises[1] = 'Provides restrictions on the object to be claimed';
-     		definitions[1] = 'Includes terms and definitions to be defined in a contract';
-     		conditions[1] = 'Provides any other applicable restrictions';
+     		merchandises[0] = 'Provides restrictions on the object to be claimed';
+     		definitions[0] = 'Includes terms and definitions to be defined in a contract';
+     		conditions[0] = 'Provides any other applicable restrictions';
+     		totalReserve = 0;
+     		price = 100 / tax;
      }
      
 // This generates public events on the blockchain that will notify clients
@@ -177,8 +182,20 @@ modifier onlySeller() {
 // MEMBER MANAGEMENT
 
 // Register as seller
+    function register (string _brandname) public onlyV()  {
+        	seller[msg.sender].bName = _brandname;
+	    	seller[msg.sender].member = true;
+            seller[msg.sender].debt[0] = 0;
+            numberSellers += 1;
+    }
+        
 
 // Throw seller
+// Warning, all his debt remains. That is, thre is an excess of tokens, monatary mass in excess of goods that nobody will deliver
+    function expulsion (address _seller) public onlyV() onlyLegalEntity() {
+	    	seller[_seller].member = true;
+            numberSellers -= 1;
+    }
 
 // Get seller information
 
@@ -190,9 +207,26 @@ modifier onlySeller() {
     function issueTokens (uint _amount, uint _periodNumber) public onlyV {
         // promises cannot be beyond valid period
         if ((now + (_periodNumber * period)) > expiration) revert();
+        // Calculate the price
+        price = (totalReserve)/ (totalSupply ) * (CRR / 100);
+        // Calculate the amount of Ξ to deposit
+        uint deposit = _amount / price;
+        // Deposit the tax reserve in Ξ
+        // Calculate the due reserve, according Bancor formula
+        // The Legal Entity acts as Bancor Relay
+        // Isue the tokens
             vts[msg.sender] += _amount;
+            // Update total supply
+            totalSupply += _amount;
             int _debt = int(_amount);
+            // Carry over the last period debt
+            seller[msg.sender].debt[_periodNumber] += seller[msg.sender].debt[_periodNumber - 1];
+            seller[msg.sender].debt[_periodNumber - 1];
+            // Register new debt
             seller[msg.sender].debt[_periodNumber] += _debt;
+            // Update total debt
+            totalDebt += _debt;
+            // put the tax reserve at the Legal Entity
     }
     
 // Buy a product to a producer by redeeming tokens
