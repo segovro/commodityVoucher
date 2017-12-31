@@ -17,7 +17,6 @@ contract commodityVoucher {
 // Public variables of the sellers associaton
 // total Debt in vts 
     int public totalDebt;
-// reserve in Ξ
     uint public numberSellers;
 
 // Public variables of the Bancor protocol
@@ -26,6 +25,7 @@ contract commodityVoucher {
 // Tax
     uint tax = 20;
 // Relay related
+// reserve in Ξ
     uint public totalReserve;
     uint public price;
     
@@ -207,10 +207,11 @@ contract commodityVoucher {
     function issueTokens (uint _amount, uint _periodNumber) public onlyV {
         // promises cannot be beyond valid period
         if ((now + (_periodNumber * period)) > expiration) revert();
-        // Calculate the price
-        price = (totalReserve)/ (totalSupply ) * (CRR / 100);
+
         // Calculate the amount of Ξ to deposit
         uint deposit = _amount / price;
+        // Calculate the new price
+        price = (totalReserve + deposit)/ (totalSupply + _amount) * (CRR / 100);
         // Deposit the tax reserve in Ξ
         // Calculate the due reserve, according Bancor formula
         // The Legal Entity acts as Bancor Relay
@@ -256,6 +257,4 @@ contract commodityVoucher {
     function () public {
         revert();     // Prevents accidental sending of ether
     }
-
-    
 }
