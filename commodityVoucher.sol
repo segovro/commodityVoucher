@@ -20,9 +20,8 @@ contract commodityVoucher {
     uint public numberSellers;
 
 // Public variables of the Bancor protocol
-// Constant Reserve Ratio (CRR)
-    uint CRR = 100;
-// Tax
+// Constant Reserve Ratio (CRR) is not used. Always 100%
+// Tax, VAT in % + any crowdfunding of the Legal Entity
     uint tax = 20;
 // Relay related
 // reserve in Ξ
@@ -119,10 +118,16 @@ contract commodityVoucher {
 // This generates public events on the blockchain that will notify clients
      
 // Triggered when voucher are transferred.
-     event Transfer(uint _amount, address indexed _from, uint _balanceFrom, address indexed _to, uint _balanceTo);
+    event Transfer(uint _amount, address indexed _from, uint _balanceFrom, address indexed _to, uint _balanceTo);
  
- // Triggered whenever approve(address _spender, uint256 _value) is called
-     event Approval(address indexed _owner, address indexed _spender, uint256 _value);
+// Triggered whenever approve is called
+    event Approval(address indexed _owner, address indexed _spender, uint256 _value);
+
+// Triggered at a sell
+    event Sell(address indexed _seller, string _bName, address indexed _buyer, uint _price);
+     
+// Triggered when vouchers are issued
+    event Issue(address indexed _seller, string _bName, uint _amount);
   
 // Function get current period
     function getPeriod () public {
@@ -169,17 +174,7 @@ contract commodityVoucher {
         Transfer(_amount, _from, vts[_from], _to, vts[_to] );
     }
 
-// What is the balance of a particular account?
-     function balanceOf(address _account) constant public returns (uint balance) {
-         return vts[_account];
-     }
-
-// What is the allowance of a particular account?
-    function allowance(address _account, address _spender) constant public returns (uint256 remaining) {
-	    return allowed[_account][_spender];
-	}
-
-// MEMBER MANAGEMENT
+// SELLER MANAGEMENT
 
 // Register as seller
     function register (string _brandname) public onlyV()  {
@@ -191,30 +186,41 @@ contract commodityVoucher {
         
 
 // Throw seller
-// Warning, all his debt remains. That is, thre is an excess of tokens, monatary mass in excess of goods that nobody will deliver
+// Warning, all his debt remains. That is, there is an excess of tokens, monetary mass of vts in excess representing goods that nobody will deliver
     function expulsion (address _seller) public onlyV() onlyLegalEntity() {
 	    	seller[_seller].member = true;
             numberSellers -= 1;
     }
 
-// Get seller information
-
-// Get global variables
+// SALES
 	
+// Buy a product to a producer by redeeming tokens
+        function buy (address _seller, uint _price) public onlyV {
+            // get the current period _periodNumber
+            getPeriod ();
+            // Check if the buyer has enough
+            if (vts[msg.sender] < _price) revert(); 
+            //  Redeem the tokens
+            vts[msg.sender] -= _price;
+            // the seller cancels debt for that period
+            int _debt = int(_price);
+            seller[_seller].debt[currentPeriod] -= _debt;
+            Sell(_seller, seller[_seller].bName, msg.sender, _price);
+        }
+        
 // ISSUING AND REDEEMING PROMISES
 
-// A producer promises to produce and sell, isues tokens and aquires a seller.debt
-    function issueTokens (uint _amount, uint _periodNumber) public onlyV {
+// A producer promises to produce and sell, issues tokens and aquires a seller.debt
+    function issueTokens (uint _amount, uint _periodNumber) public onlyV onlySeller {
         // promises cannot be beyond valid period
         if ((now + (_periodNumber * period)) > expiration) revert();
-
-        // Calculate the amount of Ξ to deposit
-        uint deposit = _amount / price;
-        // Calculate the new price
-        price = (totalReserve + deposit)/ (totalSupply + _amount) * (CRR / 100);
-        // Deposit the tax reserve in Ξ
-        // Calculate the due reserve, according Bancor formula
+        // Calculate the amount of Ξ to deposit, according Bancor formula. Convert to wei. 
+        uint _deposit;
+        _deposit = (1 ether) * _amount / price;
         // The Legal Entity acts as Bancor Relay
+        // Deposit the tax reserve in Ξ at the Legal Entity
+        if (msg.sender.balance > _deposit) {legalEntity.transfer(_deposit);} else revert();
+            totalReserve += _deposit / (1 ether);
         // Isue the tokens
             vts[msg.sender] += _amount;
             // Update total supply
@@ -227,28 +233,37 @@ contract commodityVoucher {
             seller[msg.sender].debt[_periodNumber] += _debt;
             // Update total debt
             totalDebt += _debt;
-            // put the tax reserve at the Legal Entity
+            Issue(msg.sender, seller[msg.sender].bName, _amount);
     }
     
-// Buy a product to a producer by redeeming tokens
-        function buy (address _seller, uint _price) public onlyV {
-            // get the current period _periodNumber
-            getPeriod ();
-            // Check if the buyer has enough
-            if (vts[msg.sender] < _price) revert(); 
-            //  Redeem the tokens
-            vts[msg.sender] -= _price;
-            // the seller cancels debt for that period
-            int _debt = int(_price);
-            seller[_seller].debt[currentPeriod] -= _debt;
-        }
+// What is the balance of a particular account?
+     function balanceOf(address _account) constant public returns (uint balance) {
+         return vts[_account];
+     }
+
+// What is the allowance of a particular account?
+    function allowance(address _account, address _spender) constant public returns (uint256 remaining) {
+	    return allowed[_account][_spender];
+	}
     
-// What is the debt of a particular account due to a certain period?
+// What is the debt of a particular seller account due to a certain period?
      function debtOf(address _account, uint _periodNumber) constant public returns (int _debt) {
+         if (seller[account].member != true) revert();
          return seller[_account].debt[_periodNumber];
      }
      
+// Get seller information
+      function sellerDetails(address _account) constant public returns (bool _member, string _bName)
+      {
+         if (seller[account].member != true) revert();
+         return seller[_account].member, seller[_account].bName ;
+      }
 
+// Get global variables
+        function globalariables() constant public returns (uint _numberSellers, uint _totalSupply, int _totalDebt, uint _totalReserve)
+        {
+        return (numberSellers, totalSupply, totalDebt,totalReserve )
+        }
 
 // LIQUIDITY
 
@@ -257,4 +272,5 @@ contract commodityVoucher {
     function () public {
         revert();     // Prevents accidental sending of ether
     }
+    
 }
