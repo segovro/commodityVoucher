@@ -11,8 +11,20 @@ contract commodityVoucher {
     string public standard = 'Token 0.1';
     string public name = 'voucher';
     string public symbol = '∏';
-    uint8 public decimals = 2;
-    uint256 public totalSupply = 0;
+    uint public decimals = 2;
+    uint public totalSupply;
+
+// Public variables of the sellers associaton
+// total Debt in vts 
+    int public totalDebt;
+// reserve in Ξ
+    uint public totalReserve;
+    uint public numberSellers;
+
+// Public variables of the bancor protocol
+// Constant Reserve Ratio (CRR)
+    uint CRR = 100;
+    uint tax = 20;
     
 // A Ricardian contract is a document which is legible to both a court of law and to a software application
 // Ricardian Contract legal entity operating the token
@@ -54,21 +66,43 @@ contract commodityVoucher {
             revert(); }
          _;
     }
+  
+// 
+modifier onlySeller() {
+         if (seller[msg.sender].member != true) {
+            revert(); }
+         _;
+    }
        
     
 // balance in tokens for each account for each period
-    mapping(address => uint) public voucherBalance;
+// We use VTS for a voucher following the Voucher Trading System (VTS) conventions
+    mapping(address => uint) public vts;
+
 // Owner of account approves the transfer of an amount to another account
     mapping(address => mapping (address => uint)) public allowed;
-// balance in debt for each account for each period
-    mapping(address => int[]) public debtBalance;
+
+// structuring seller information   
+    struct Seller{
+// brandname, he name normally known in the street
+        string bName;
+        bool member;
+        int[] debt;
+    }    
+    mapping (address => Seller) seller;
 
 // Initializes contract 
      function commodityVoucher(            					
          ) public {
      		legalEntity = msg.sender;
-     		voucherBalance[msg.sender] = totalSupply;  
-     		debtBalance[msg.sender][1] = 0;  
+            totalSupply = 0;
+            totalDebt = 0;
+            totalReserve = 0;
+            numberSellers = 0;
+		    seller[msg.sender].bName = brandname;
+	    	seller[msg.sender].member = true;
+            seller[msg.sender].debt[0] = 0;
+            numberSellers += 1;
      		start = now;
      		expiration = now + duration;
      		// write as many as necessary
@@ -92,23 +126,18 @@ contract commodityVoucher {
     
 // ERC20 set of functions
 
-// Mint vouchers
-    function mint (uint _amount) public onlyLegalEntity onlyV {
-        voucherBalance[legalEntity] += _amount;
-    }
-
-// Transfeer vouchers. Transfer the balance from sender's account to another account
+// Transfer vouchers. Transfer the balance from sender's account to another account
     function transfer(address _to, uint _amount) public onlyV {
         // Check if the sender has enough
-        if (voucherBalance[msg.sender] < _amount) revert();   
+        if (vts[msg.sender] < _amount) revert();   
         // Check for overflows
-        if (voucherBalance[_to] + _amount < voucherBalance[_to]) revert(); 	
+        if (vts[_to] + _amount < vts[_to]) revert(); 	
         // Subtract from the sender
-        voucherBalance[msg.sender] -= _amount;  
+        vts[msg.sender] -= _amount;  
         // Add the same to the recipient
-        voucherBalance[_to] += _amount;    
+        vts[_to] += _amount;    
         // Notify anyone listening that this transfer took place
-        Transfer(_amount, msg.sender, voucherBalance[msg.sender], _to, voucherBalance[_to] );                   
+        Transfer(_amount, msg.sender, vts[msg.sender], _to, vts[_to] );                   
     }
     
 // Allow _spender to withdraw from your account, multiple times, up to the _value amount.
@@ -124,36 +153,46 @@ contract commodityVoucher {
         require(_amount <= allowed[_from][msg.sender]);
         allowed[_from][msg.sender] -= _amount;
         // Check if the sender has enough
-        if (voucherBalance[_from] < _amount) revert();   
+        if (vts[_from] < _amount) revert();   
         // Check for overflows
-        if (voucherBalance[_to] + _amount < voucherBalance[_to]) revert();
+        if (vts[_to] + _amount < vts[_to]) revert();
         // Subtract from the sender
-        voucherBalance[_from] -= _amount;  
+        vts[_from] -= _amount;  
         // Add the same to the recipient
-        voucherBalance[_to] += _amount; 
+        vts[_to] += _amount; 
         return true;
-        Transfer(_amount, _from, voucherBalance[_from], _to, voucherBalance[_to] );
+        Transfer(_amount, _from, vts[_from], _to, vts[_to] );
     }
 
 // What is the balance of a particular account?
      function balanceOf(address _account) constant public returns (uint balance) {
-         return voucherBalance[_account];
+         return vts[_account];
      }
 
 // What is the allowance of a particular account?
     function allowance(address _account, address _spender) constant public returns (uint256 remaining) {
 	    return allowed[_account][_spender];
 	}
+
+// MEMBER MANAGEMENT
+
+// Register as seller
+
+// Throw seller
+
+// Get seller information
+
+// Get global variables
 	
 // ISSUING AND REDEEMING PROMISES
 
-// A producer promises to produce and sell, isues tokens and aquires a debtBalance
+// A producer promises to produce and sell, isues tokens and aquires a seller.debt
     function issueTokens (uint _amount, uint _periodNumber) public onlyV {
         // promises cannot be beyond valid period
         if ((now + (_periodNumber * period)) > expiration) revert();
-            voucherBalance[msg.sender] += _amount;
+            vts[msg.sender] += _amount;
             int _debt = int(_amount);
-            debtBalance[msg.sender][_periodNumber] += _debt;
+            seller[msg.sender].debt[_periodNumber] += _debt;
     }
     
 // Buy a product to a producer by redeeming tokens
@@ -161,17 +200,17 @@ contract commodityVoucher {
             // get the current period _periodNumber
             getPeriod ();
             // Check if the buyer has enough
-            if (voucherBalance[msg.sender] < _price) revert(); 
+            if (vts[msg.sender] < _price) revert(); 
             //  Redeem the tokens
-            voucherBalance[msg.sender] -= _price;
+            vts[msg.sender] -= _price;
             // the seller cancels debt for that period
             int _debt = int(_price);
-            debtBalance[_seller][currentPeriod] -= _debt;
+            seller[_seller].debt[currentPeriod] -= _debt;
         }
     
 // What is the debt of a particular account due to a certain period?
      function debtOf(address _account, uint _periodNumber) constant public returns (int _debt) {
-         return debtBalance[_account][_periodNumber];
+         return seller[_account].debt[_periodNumber];
      }
      
 
@@ -184,4 +223,5 @@ contract commodityVoucher {
         revert();     // Prevents accidental sending of ether
     }
 
-  }
+    
+}
