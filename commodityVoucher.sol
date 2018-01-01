@@ -26,7 +26,7 @@ contract commodityVoucher {
 // Relay related
 // reserve in Ξ
     uint public totalReserve;
-    uint public price;
+    uint public vtsPrice;
     
 // A Ricardian contract is a document which is legible to both a court of law and to a software application
 // Ricardian Contract legal entity operating the token
@@ -89,7 +89,8 @@ contract commodityVoucher {
 // brandname, he name normally known in the street
         string bName;
         bool member;
-        int[] debt;
+        int[] debt; //due det for a period
+        uint[] sales; // dales made in a period
     }    
     mapping (address => Seller) seller;
 
@@ -112,7 +113,7 @@ contract commodityVoucher {
      		definitions[0] = 'Includes terms and definitions to be defined in a contract';
      		conditions[0] = 'Provides any other applicable restrictions';
      		totalReserve = 0;
-     		price = 100 / tax;
+     		vtsPrice = 100 / tax;
      }
      
 // This generates public events on the blockchain that will notify clients
@@ -134,7 +135,7 @@ contract commodityVoucher {
     currentPeriod = (now - start) / period;
     }
     
-// ERC20 set of functions
+// ERC20 SET OF FUNCTIONS
 
 // Transfer vouchers. Transfer the balance from sender's account to another account
     function transfer(address _to, uint _amount) public onlyV {
@@ -202,10 +203,17 @@ contract commodityVoucher {
             if (vts[msg.sender] < _price) revert(); 
             //  Redeem the tokens
             vts[msg.sender] -= _price;
+            // the seller adds to sales
+            seller[_seller].sales[currentPeriod] += _price;
             // the seller cancels debt for that period
             int _debt = int(_price);
             seller[_seller].debt[currentPeriod] -= _debt;
+            // Free total reserve. The Legal Entity may now dispose of this monetary
+            uint _freeR;
+            _freeR = (1 ether) * _price /vtsPrice;
+            totalReserve = totalReserve - _freeR;
             Sell(_seller, seller[_seller].bName, msg.sender, _price);
+
         }
         
 // ISSUING AND REDEEMING PROMISES
@@ -216,7 +224,7 @@ contract commodityVoucher {
         if ((now + (_periodNumber * period)) > expiration) revert();
         // Calculate the amount of Ξ to deposit, according Bancor formula. Convert to wei. 
         uint _deposit;
-        _deposit = (1 ether) * _amount / price;
+        _deposit = (1 ether) * _amount / vtsPrice;
         // The Legal Entity acts as Bancor Relay
         // Deposit the tax reserve in Ξ at the Legal Entity
         if (msg.sender.balance > _deposit) {legalEntity.transfer(_deposit);} else revert();
@@ -226,9 +234,6 @@ contract commodityVoucher {
             // Update total supply
             totalSupply += _amount;
             int _debt = int(_amount);
-            // Carry over the last period debt
-            seller[msg.sender].debt[_periodNumber] += seller[msg.sender].debt[_periodNumber - 1];
-            seller[msg.sender].debt[_periodNumber - 1];
             // Register new debt
             seller[msg.sender].debt[_periodNumber] += _debt;
             // Update total debt
@@ -246,23 +251,23 @@ contract commodityVoucher {
 	    return allowed[_account][_spender];
 	}
     
-// What is the debt of a particular seller account due to a certain period?
-     function debtOf(address _account, uint _periodNumber) constant public returns (int _debt) {
-         if (seller[account].member != true) revert();
-         return seller[_account].debt[_periodNumber];
+// What are sales and of a particular seller at a certain period?
+     function debtOf(address _account, uint _periodNumber) constant public returns (uint _sales, int _debt) {
+         if (seller[_account].member != true) revert();
+         return (seller[_account].sales[_periodNumber], seller[_account].debt[_periodNumber]);
      }
      
 // Get seller information
       function sellerDetails(address _account) constant public returns (bool _member, string _bName)
       {
-         if (seller[account].member != true) revert();
-         return seller[_account].member, seller[_account].bName ;
+         if (seller[_account].member != true) revert();
+         return (seller[_account].member, seller[_account].bName);
       }
 
 // Get global variables
         function globalariables() constant public returns (uint _numberSellers, uint _totalSupply, int _totalDebt, uint _totalReserve)
         {
-        return (numberSellers, totalSupply, totalDebt,totalReserve )
+        return (numberSellers, totalSupply, totalDebt,totalReserve);
         }
 
 // LIQUIDITY
