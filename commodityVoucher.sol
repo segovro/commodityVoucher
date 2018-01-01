@@ -30,9 +30,9 @@ contract commodityVoucher {
     
 // A Ricardian contract is a document which is legible to both a court of law and to a software application
 // Ricardian Contract legal entity operating the token
-    string brandname = 'the name normally known in the street'; 
-    string shortname = 'short name is displayed by trading software, 8 chars'; 
-    string longname = 'full legal name'; 
+    string brandname = 'BRANDNAME'; //the name normally known in the street
+    string shortname = 'ABCDEFGH'; // short name is displayed by trading software, 8 chars
+    string longname = 'The Legal Entity Association of Producers'; // full legal name
     string postaAddress = 'formal address for snail-mail notices'; 
     string country = 'ISO code that indicates the jurisdiction'; 
     string registration = 'legal registration code of the legal person or legal entity';
