@@ -3,6 +3,7 @@
 
 The purpose of this development is the usage of vouchers or “tokens” representing commodities like gasoline, fuel, communication fees, crops and other agricultural products, food, services, and all kind of consumables. with no regard to who produced them. We focus on Consumables (also known as consumable goods, nondurable goods, or soft goods) are goods that are capable of being consumed; that may be destroyed, dissipated, wasted, or spent, and in many cases have an expiration date. A commodity good or service has full or partial but substantial fungibility; that is, whose individual units are essentially interchangeable, and the market treats its instances as equivalent or nearly so with no regard to who produced them. We focus on Consumables (also known as consumable goods, nondurable goods, or soft goods) are goods that are capable of being consumed; that may be destroyed, dissipated, wasted, or spent, and in many cases have an expiration date.
 ![selfcredit](https://github.com/segovro/commodityVoucher/blob/master/images/selfcredit.png)
+
 It is no other than the implementation of the concept that *“Anyone who offers goods and services for sale in the market is qualified to issue currency”, -THE END OF MONEY AND THE FUTURE OF CIVILIZATION, by Thomas H. Greco, Jr., 2009-*. *“Credit Coin is a contract backed by promises of future productivity”, Paul Grignon, Digital Coin, January 1, 2008. Revised August 14, 2009-*.
 
 ## Monetary Mechanics ##
