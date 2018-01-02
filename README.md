@@ -11,6 +11,8 @@ It is no other than the implementation of the concept that *“Anyone who offers
 
 Following Bancor method, tokens ere issued by making a reserve at a Relay of an already trusted Currency, in this case Ether. We use as Relay the Legal Entity holding the Ricardian Contract to which producers and sellers adhere as members or associates (say a Coffee Farmers Association). This entitles them to issue tokens, as a debt. It is in the end a self-credit. Once tokens are redeemed at a seller, buying his products, the seller debt or promise is cancelled, and reserves at the Relay can be liberated, for example to pay VAT or the Association running costs.
 
+![vts Mechanics](https://github.com/segovro/commodityVoucher/blob/master/images/vtsMechanics.png)
+
 ## Main References ##
 
 Generic Voucher Language https://tools.ietf.org/html/draft-ietf-trade-voucher-lang-07
