@@ -1,20 +1,20 @@
-pragma solidity ^0.4.18;
+pragma solidity ^0.4.19;
 
 contract commodityVoucher {
 
-//References
+// References
 // Generic Voucher Language https://tools.ietf.org/html/draft-ietf-trade-voucher-lang-07
-//  Voucher Trading System (vtsToken) conventions, Language (RFC 4153) – IETF https://tools.ietf.org/html/rfc4153 
+// Voucher Trading System (vtsToken) conventions, Language (RFC 4153) – IETF https://tools.ietf.org/html/rfc4153 
 // The Ricardian Financial Instrument Contract http://www.systemics.com/docs/ricardo/issuer/contract.html
 // Bancor white paper https://www.bancor.network/Whitepaper
 // ERC20 Token Standard https://theethereum.wiki/w/index.php/ERC20_Token_Standard
 
   
 // Public variables of the ERC20 token 
-    string public standard = 'Token 0.1';
-    string public name = 'vtsToken';
-    string public symbol = 'vts';
-    uint public decimals = 2;
+    string public constant standard = 'Token 0.1';
+    string public constant name = 'vtsToken';
+    string public constant symbol = 'vts';
+    uint public constant decimals = 2;
     uint public totalSupply;
     
 // Owner of this smart contract, the legal entity signing the Ricardian Contract
@@ -30,33 +30,31 @@ contract commodityVoucher {
 // Tax, VAT in % + any crowdfunding of the Legal Entity.For tax = 20%, price is 5
 // Relay related
     uint public totalReserve; // reserve in Ξ
-    uint public vtsTokenPrice = 5; // vtsToken per Ξ
+    uint public constant vtsTokenPrice = 5; // vtsToken per Ξ
 
 // A Ricardian contract is a document which is legible to both a court of law and to a software application
 // Ricardian Contract legal entity operating the token
-    string brandname = 'BRANDNAME'; //the name normally known in the street
-    string shortname = 'ABCDEFGH'; // short name is displayed by trading software, 8 chars
-    string longname = 'The Legal Entity Association of Producers'; // full legal name
-    string postaAddress = 'formal address for snail-mail notices'; 
-    string country = 'ISO code that indicates the jurisdiction'; 
-    string registration = 'legal registration code of the legal person or legal entity';
-    string contractHash = 'swarm hash of the human readable legal document, signed, preferably XML generated to be parsevable'; 
+    string public constant brandname = 'BRANDNAME'; //the name normally known in the street
+    string public constant shortname = 'ABCDEFGH'; // short name is displayed by trading software, 8 chars
+    string public constant longname = 'The Legal Entity Association of Producers'; // full legal name
+    string public constant postaAddress = 'formal address for snail-mail notices'; 
+    string public constant country = 'ISO code that indicates the jurisdiction'; 
+    string public constant registration = 'legal registration code of the legal person or legal entity';
+    string public constant contractHash = 'swarm hash of the human readable legal document, signed, preferably XML generated to be parsevable'; 
 
 // Contract details as in the legal document
-// Duration of the contract
-    uint duration = 1 years;
 // validity time of the contract
     uint public expiration; 				   
     uint public start;
 // Lenght of selling periods in time
-    uint public period = 4 weeks;
+    uint public constant period = 4 weeks;
     uint public currentPeriod;
 // Provides restrictions on the object to be claimed
-    string[] merchandises; 
+    string public merchandises; 
 // Includes terms and definitions to be defined in a contract
-    string[] definitions; 
+    string public definitions; 
 // Provides any other applicable restrictions
-    string[] conditions; 
+    string public conditions; 
     
 // Functions with this modifier can only be executed by the legalEntity
      modifier onlyLegalEntity() {
@@ -95,7 +93,8 @@ contract commodityVoucher {
         bool member;
         int[] debt; //due det for a period
         uint[] sales; // sales made in a period
-    }    
+    }  
+    
     mapping (address => Seller) seller;
 
 // Initializes contract 
@@ -111,14 +110,13 @@ contract commodityVoucher {
             seller[msg.sender].debt[0] = 0;
             numberSellers += 1;
      		start = now;
-     		expiration = now + duration;
-     		// write as many as necessary
-     		merchandises[0] = 'Provides restrictions on the object to be claimed';
-     		definitions[0] = 'Includes terms and definitions to be defined in a contract';
-     		conditions[0] = 'Provides any other applicable restrictions';
+     		expiration = now + (1 years);
+     		merchandises = 'Provides restrictions on the object to be claimed';
+     		definitions = 'Includes terms and definitions to be defined in a contract';
+     		conditions = 'Provides any other applicable restrictions';
      		totalReserve = 0;
       }
-     
+      
 // This generates public events on the blockchain that will notify clients
      
 // Triggered when voucher are transferred.
@@ -143,9 +141,9 @@ contract commodityVoucher {
 // Transfer vouchers. Transfer the balance from sender's account to another account
     function transfer(address _to, uint _amount) public {
         // Check if the sender has enough
-        if (vtsToken[msg.sender] < _amount) revert();   
+        require (vtsToken[msg.sender] > _amount);   
         // Check for overflows
-        if (vtsToken[_to] + _amount < vtsToken[_to]) revert(); 	
+        require (vtsToken[_to] + _amount > vtsToken[_to]); 	
         // Subtract from the sender
         vtsToken[msg.sender] -= _amount;  
         // Add the same to the recipient
@@ -167,9 +165,9 @@ contract commodityVoucher {
         require(_amount <= allowed[_from][msg.sender]);
         allowed[_from][msg.sender] -= _amount;
         // Check if the sender has enough
-        if (vtsToken[_from] < _amount) revert();   
+        require (vtsToken[_from] > _amount);   
         // Check for overflows
-        if (vtsToken[_to] + _amount < vtsToken[_to]) revert();
+        require (vtsToken[_to] + _amount > vtsToken[_to]);
         // Subtract from the sender
         vtsToken[_from] -= _amount;  
         // Add the same to the recipient
@@ -203,7 +201,7 @@ contract commodityVoucher {
             // get the current period _periodNumber
             getPeriod ();
             // Check if the buyer has enough
-            if (vtsToken[msg.sender] < _price) revert(); 
+            require (vtsToken[msg.sender] > _price); 
             //  Redeem the tokens
             vtsToken[msg.sender] -= _price;
             // the seller adds to sales
@@ -216,7 +214,6 @@ contract commodityVoucher {
             _freeR = (1 ether) * _price /vtsTokenPrice;
             totalReserve = totalReserve - _freeR;
             Sell(_seller, seller[_seller].bName, msg.sender, _price);
-
         }
         
 // ISSUING AND REDEEMING PROMISES
@@ -224,13 +221,13 @@ contract commodityVoucher {
 // A producer promises to produce and sell, issues tokens and aquires a seller.debt
     function issueTokens (uint _amount, uint _periodNumber) public onlySeller onlyV() {
         // promises cannot be beyond valid period
-        if ((now + (_periodNumber * period)) > expiration) revert();
+        require ((now + (_periodNumber * period)) < expiration);
         // Calculate the amount of Ξ to deposit, according Bancor formula. Convert to wei. 
         uint _deposit;
         _deposit = (1 ether) * _amount / vtsTokenPrice;
         // The Legal Entity acts as Bancor Relay
         // Deposit the tax reserve in Ξ at the Legal Entity
-        if (msg.sender.balance > _deposit) {legalEntity.transfer(_deposit);} else revert();
+            legalEntity.transfer(_deposit);
             totalReserve += _deposit / (1 ether);
         // Isue the tokens
             vtsToken[msg.sender] += _amount;
@@ -263,14 +260,14 @@ contract commodityVoucher {
 // Get seller information
       function sellerDetails(address _seller) constant public returns (bool _member, string _bName)
       {
-         if (seller[_seller].member != true) revert();
+         require (seller[_seller].member == true);
          return (seller[_seller].member, seller[_seller].bName);
       }
 
 // Get global variables
         function globalariables() constant public returns (uint _numberSellers, uint _totalSupply, int _totalDebt, uint _totalReserve)
         {
-        return (numberSellers, totalSupply, totalDebt,totalReserve);
+        return (numberSellers, totalSupply, totalDebt, totalReserve);
         }
 
 // This unnamed function is called whenever someone tries to send ether to it */
