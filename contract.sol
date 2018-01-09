@@ -106,7 +106,7 @@ contract commodityVoucher {
             totalDebt = 0;
             totalReserve = 0;
             numberSellers = 0;
-            numberSellers += 1;
+            numberSellers = 0;
      		totalReserve = 0;
       }
       
