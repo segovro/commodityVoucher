@@ -1,6 +1,6 @@
 # commodityVoucher
 *Commodity Vouchers, Ricardian Contract Smart Tokens on Ξthereum  Protocol*
-## Ropsten Contract Address  0x01D64b4496253e0D955c2B9EDB77b9f03c8F10Af##
+## Ropsten Contract Address  0x01D64b4496253e0D955c2B9EDB77b9f03c8F10Af
 
 The purpose of this development is the usage of vouchers or “tokens” representing commodities like gasoline, fuel, communication fees, crops and other agricultural products, food, services, and all kind of consumables. with no regard to who produced them. We focus on Consumables (also known as consumable goods, nondurable goods, or soft goods) are goods that are capable of being consumed; that may be destroyed, dissipated, wasted, or spent, and in many cases have an expiration date. A commodity good or service has full or partial but substantial fungibility; that is, whose individual units are essentially interchangeable, and the market treats its instances as equivalent or nearly so with no regard to who produced them. We focus on Consumables (also known as consumable goods, nondurable goods, or soft goods) are goods that are capable of being consumed; that may be destroyed, dissipated, wasted, or spent, and in many cases have an expiration date.
 ![selfcredit](https://github.com/segovro/commodityVoucher/blob/master/images/selfcredit.png)
