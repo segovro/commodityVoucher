@@ -1,4 +1,4 @@
-# commodityVoucher
+# commodityToken
 *Commodity Vouchers, Ricardian Contract Smart Tokens on Ξthereum  Protocol*
 ## Ropsten Contract Address  0x01D64b4496253e0D955c2B9EDB77b9f03c8F10Af
 
