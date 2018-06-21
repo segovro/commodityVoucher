@@ -142,14 +142,14 @@ contract commodityVoucher {
         // Add the same to the recipient
         vtsToken[_to] += _amount;    
         // Notify anyone listening that this transfer took place
-        Transfer(_amount, msg.sender, vtsToken[msg.sender], _to, vtsToken[_to] );                   
+        emit Transfer(_amount, msg.sender, vtsToken[msg.sender], _to, vtsToken[_to] );                   
     }
     
 // Allow _spender to withdraw from your account, multiple times, up to the _value amount.
 // If this function is called again it overwrites the current allowance with _value.
      function approve(address _spender, uint _amount) public {
          allowed[msg.sender][_spender] = _amount;
-         Approval(msg.sender, _spender, _amount);
+         emit Approval(msg.sender, _spender, _amount);
     }
      
 // Send an amount of tokens from other address _from to address _to
@@ -166,7 +166,7 @@ contract commodityVoucher {
         // Add the same to the recipient
         vtsToken[_to] += _amount; 
         return true;
-        Transfer(_amount, _from, vtsToken[_from], _to, vtsToken[_to] );
+        emit Transfer(_amount, _from, vtsToken[_from], _to, vtsToken[_to] );
     }
 
 // SELLER MANAGEMENT
@@ -207,7 +207,7 @@ contract commodityVoucher {
             uint _freeR;
             _freeR = (1 ether) * _price /vtsTokenPrice;
             totalReserve = totalReserve - _freeR;
-            Sell(_seller, seller[_seller].bName, msg.sender, _price);
+            emit Sell(_seller, seller[_seller].bName, msg.sender, _price);
         }
         
 // ISSUING AND REDEEMING PROMISES
@@ -232,7 +232,7 @@ contract commodityVoucher {
             seller[msg.sender].debt[_periodNumber] += _debt;
             // Update total debt
             totalDebt += _debt;
-            Issue(msg.sender, seller[msg.sender].bName, _amount);
+            emit Issue(msg.sender, seller[msg.sender].bName, _amount);
     }
 
     
